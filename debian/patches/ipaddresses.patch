@@ -1,0 +1,50 @@
+Description: ipaddresses fact added
+
+--- /dev/null
++++ b/lib/facter/util/ipaddresses.rb
+@@ -0,0 +1,27 @@
++# Fact: ipaddresses
++#
++# Purpose: Return the array of all IP addresses for a host.
++#
++# Resolution:
++#   Only for Linux
++
++require 'facter/util/ip'
++
++Facter.add(:ipaddresses) do
++  confine :kernel => :linux
++  setcode do
++    ip = []
++    output = Facter::Util::IP.exec_ip(["address list 2>/dev/null"])
++    if output
++      regexp = /inet ([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)/
++      output.split("\n").each do |line|
++        match = regexp.match(line)
++        if match and not /^127\./.match(match[1])
++          ip << match[1]
++        end
++      end
++    end
++    ip
++  end
++end
++
+--- a/lib/facter/util/ip.rb.o
++++ b/lib/facter/util/ip.rb
+@@ -105,6 +105,15 @@
+   def self.exec_ifconfig(additional_arguments=[])
+     Facter::Core::Execution.exec("#{self.get_ifconfig} #{additional_arguments.join(' ')}")
+   end
++
++  def self.exec_ip(additional_arguments=[])
++    Facter::Core::Execution.exec("#{self.get_ip} #{additional_arguments.join(' ')}")
++  end
++  def self.get_ip
++    common_paths=["/sbin/ip"]
++    common_paths.select{|path| File.executable?(path)}.first
++  end
++
+   ##
+   # get_ifconfig looks up the ifconfig binary
+   #
